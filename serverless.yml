@@ -1,0 +1,61 @@
+service: auction-service
+
+# Configuración del proveedor (AWS en este caso)
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, 'dev'} # Variable de entorno para el entorno (dev, prod, etc.)
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+
+# Plugins opcionales
+plugins:
+  - serverless-offline # Para pruebas locales
+
+# Funciones Lambda
+functions:
+  createAuction:
+    handler: handler.createAuction
+    events:
+      - http:
+          path: auctions
+          method: post
+          cors: true
+
+  getAuctions:
+    handler: handler.getAuctions
+    events:
+      - http:
+          path: auctions
+          method: get
+          cors: true
+
+  getAuctionById:
+    handler: handler.getAuctionById
+    events:
+      - http:
+          path: auctions/{id}
+          method: get
+          cors: true
+
+# Recursos adicionales (opcional)
+resources:
+  Resources:
+    AuctionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Auctions-${self:provider.environment.STAGE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
